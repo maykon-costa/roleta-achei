@@ -19,7 +19,8 @@ painel.html ──► você controla prêmios, anunciantes, padarias, limites e 
 |---|---|
 | `supabase/migrations/…_roleta.sql` | Tabelas, RLS, sorteio atômico, OTP, resgate, dashboard |
 | `supabase/functions/roleta/index.ts` | API pública (config, código WhatsApp, girar, resgatar) |
-| `web/roleta.html` | Página do cliente (abre em modo demonstração enquanto não estiver configurada) |
+| `web/index.html` | Redireciona a raiz do site para a roleta (é o endereço do QR do saco de pão) |
+| `web/roleta.html` | Página do cliente (sem `?b=`, usa a origem `saco`; abre em modo demonstração enquanto não estiver configurada) |
 | `web/resgate.html` | Página do anunciante para validar códigos |
 | `web/painel.html` | Seu painel administrativo |
 | `web/painel-demo-data.js` | Dados fictícios do modo demonstração do painel (pode apagar em produção) |

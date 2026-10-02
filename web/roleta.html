@@ -126,7 +126,7 @@ dialog::backdrop{background:rgba(30,15,5,.6)}
 const R = window.ROLETA;
 const $ = s => document.querySelector(s);
 const DEMO = R.API_URL.includes('SEU-PROJETO');
-const bakery = new URLSearchParams(location.search).get('b') || (DEMO ? 'demo' : '');
+const bakery = new URLSearchParams(location.search).get('b') || (DEMO ? 'demo' : 'saco');
 const store = { get:k=>{try{return localStorage.getItem(k)}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}} };
 
 /* ---------- Identificador do aparelho (aleatório, guardado no aparelho) ---------- */
