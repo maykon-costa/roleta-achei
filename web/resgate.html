@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Validar prêmio — Achei no Pão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,700&display=swap" rel="stylesheet">
+<script>
+window.ROLETA = {
+  API_URL: "https://vewaheqmxqvgrwjwmvfd.supabase.co/functions/v1/roleta",
+  ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZld2FoZXFteHF2Z3J3andtdmZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjY0NzEsImV4cCI6MjEwMTM0MjQ3MX0.HNG9or-ncNUfH1oAj0bhokUtlFiGDAnH5qKUdM2ep5s"
+};
+</script>
+<style>
+:root{--bg:#F6E7CF;--card:#FFF8EC;--ink:#2A1A0E;--ink-2:#6B4E33;--line:#E3CBA6;--red:#C8322B;--ok:#1E7A45;--warn:#B26A00;
+  --display:"Baloo 2","Trebuchet MS",sans-serif;--body:"Nunito Sans","Segoe UI",sans-serif;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2E2117;--card:#2A1E15;--ink:#F7EBDA;--ink-2:#D2B898;--line:#5A4330;--red:#E5544C;--ok:#5FD39A;--warn:#F2B632}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.wrap{max-width:420px;margin:0 auto;padding:24px 16px}
+h1{font:800 32px/1.05 var(--display);margin:0 0 4px}
+p.sub{margin:0 0 18px;color:var(--ink-2)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px}
+label{display:grid;gap:4px;font-weight:700;font-size:14px;margin-bottom:12px}
+input{width:100%;padding:13px 14px;border:2px solid var(--line);border-radius:14px;background:var(--bg);outline:none;font-size:18px}
+input#code{text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+input:focus{border-color:var(--red)}
+.btn{width:100%;border:0;border-radius:14px;padding:14px;background:var(--red);color:#fff;font:800 19px var(--display);cursor:pointer}
+.btn.ok{background:var(--ok)}
+.btn.ghost{background:transparent;border:2px solid var(--line);color:var(--ink);font-size:16px;margin-top:8px}
+.btn:disabled{opacity:.6}
+.res{margin-top:16px;display:none}
+.res.show{display:block}
+.prize{font:800 28px/1.1 var(--display);margin:2px 0 10px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0 0 14px;font-size:15px}
+dt{color:var(--ink-2)} dd{margin:0;font-weight:700}
+.tag{display:inline-block;font-weight:800;font-size:13px;padding:3px 10px;border-radius:99px;margin-bottom:6px}
+.tag.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.tag.bad{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
+.tag.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.hint{font-size:13.5px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Validar prêmio</h1>
+  <p class="sub">Para anunciantes da Roleta Achei no Pão.</p>
+  <form class="card" id="form">
+    <label>Código do cliente<input id="code" required placeholder="AP-XXXXXXX" autocomplete="off" maxlength="12"></label>
+    <label>Seu PIN<input id="pin" type="password" inputmode="numeric" required minlength="4" maxlength="8" autocomplete="current-password"></label>
+    <button class="btn" id="check">Consultar código</button>
+    <div class="res" id="res" role="status" aria-live="polite"></div>
+  </form>
+  <p class="hint" style="margin-top:14px">Confira o nome e o final do WhatsApp com o cliente antes de confirmar. Um código só pode ser usado uma vez.</p>
+</div>
+<script>
+(function(){
+const R = window.ROLETA, $ = s=>document.querySelector(s);
+const DEMO = R.API_URL.includes('SEU-PROJETO');
+try { $('#pin').value = sessionStorage.getItem('ap_pin') || ''; } catch(e){}
+const fmt = d => new Date(d).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+const esc = s => String(s??'').replace(/</g,'&lt;');
+
+async function call(confirmar){
+  if (DEMO) return { ok:true, redeemed:confirmar, prize:'Açaí 300ml', advertiser:'Açaí da Praça', player:'Maria', phone_end:'4321', won_at:new Date().toISOString(), expires_at:new Date(Date.now()+6*864e5).toISOString() };
+  const r = await fetch(R.API_URL, { method:'POST', headers:{'Content-Type':'application/json', apikey:R.ANON_KEY, Authorization:'Bearer '+R.ANON_KEY},
+    body: JSON.stringify({ acao:'resgatar', code:$('#code').value, pin:$('#pin').value, confirmar }) });
+  return r.json();
+}
+function show(html){ const r=$('#res'); r.innerHTML=html; r.classList.add('show'); }
+
+$('#form').addEventListener('submit', async e=>{
+  e.preventDefault(); $('#check').disabled=true;
+  try{
+    const d = await call(false);
+    try { sessionStorage.setItem('ap_pin', $('#pin').value); } catch(e){}
+    if (d.error==='codigo_ou_pin_invalido') return show('<span class="tag bad">Código ou PIN inválido</span><p class="hint">Confira o código com o cliente. Após 10 tentativas erradas, a validação é bloqueada por 1 hora.</p>');
+    if (d.error==='muitas_tentativas') return show('<span class="tag bad">Muitas tentativas</span><p class="hint">Aguarde 1 hora para tentar de novo.</p>');
+    if (d.error==='ja_resgatado') return show(`<span class="tag bad">Já foi usado</span><p class="prize">${esc(d.prize)}</p><p class="hint">Resgatado em ${fmt(d.redeemed_at)}.</p>`);
+    if (d.error==='expirado') return show(`<span class="tag warn">Vencido</span><p class="prize">${esc(d.prize)}</p><p class="hint">Válido até ${fmt(d.expires_at)}.</p>`);
+    if (d.error) return show('<span class="tag bad">Não foi possível consultar</span><p class="hint">Tente de novo em instantes.</p>');
+    show(`<span class="tag ok">Código válido</span><p class="prize">${esc(d.prize)}</p>
+      <dl><dt>Cliente</dt><dd>${esc(d.player)}</dd><dt>WhatsApp</dt><dd>final ${esc(d.phone_end)}</dd>
+      <dt>Ganhou em</dt><dd>${fmt(d.won_at)}</dd><dt>Válido até</dt><dd>${fmt(d.expires_at)}</dd></dl>
+      <button type="button" class="btn ok" id="confirm">Confirmar entrega do prêmio</button>`);
+    $('#confirm').onclick = async ()=>{
+      $('#confirm').disabled = true;
+      const c = await call(true);
+      if (c.ok && c.redeemed){ show(`<span class="tag ok">Prêmio entregue</span><p class="prize">${esc(c.prize)}</p><p class="hint">Registrado agora para ${esc(c.player)}.</p><button type="button" class="btn ghost" id="again">Validar outro código</button>`);
+        $('#again').onclick=()=>{ $('#code').value=''; $('#res').classList.remove('show'); $('#code').focus(); }; }
+      else show('<span class="tag bad">Não foi possível confirmar</span><p class="hint">Consulte o código de novo.</p>');
+    };
+  } catch(err){ show('<span class="tag bad">Sem conexão</span><p class="hint">Verifique a internet e tente de novo.</p>'); }
+  finally{ $('#check').disabled=false; }
+});
+})();
+</script>
+</body>
+</html>

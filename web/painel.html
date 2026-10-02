@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel — Roleta Achei no Pão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.2/lib/qr-code-styling.js"></script>
+<script>
+window.PAINEL = {
+  SUPABASE_URL: "https://vewaheqmxqvgrwjwmvfd.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZld2FoZXFteHF2Z3J3andtdmZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjY0NzEsImV4cCI6MjEwMTM0MjQ3MX0.HNG9or-ncNUfH1oAj0bhokUtlFiGDAnH5qKUdM2ep5s",
+  ROLETA_URL: "roletaacheinopao.online"   // endereço público da roleta (vai no QR de cada padaria)
+};
+</script>
+<style>
+:root{--bg:#F3ECE1;--panel:#FFFDF8;--ink:#2A1A0E;--ink-2:#6B5744;--line:#E2D3BE;--red:#C8322B;--red-ink:#fff;--soft:#F7E2D6;--ok:#1E7A45;--warn:#B26A00;
+  --display:"Baloo 2","Trebuchet MS",sans-serif;--body:"Nunito Sans","Segoe UI",sans-serif;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1C1510;--panel:#261D16;--ink:#F4E9DA;--ink-2:#C2AC92;--line:#41332A;--red:#E5544C;--red-ink:#1C1510;--soft:#3A2620;--ok:#5FD39A;--warn:#F2B632}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1}
+.btn{border:0;border-radius:11px;padding:9px 14px;font:700 14.5px var(--body);cursor:pointer;background:var(--red);color:var(--red-ink);white-space:nowrap}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5}
+input[type=text],input[type=number],input[type=email],input[type=datetime-local],input[type=search],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);outline:none}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--red)}
+.hint{color:var(--ink-2);font-size:13px;margin:4px 0 0}
+
+#login{min-height:100vh;display:grid;place-items:center;padding:20px}
+#login form{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;width:min(400px,100%);display:grid;gap:12px}
+
+#app{display:none}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;max-width:1280px;margin:0 auto}
+.top h1{font-size:26px}
+.nav{display:flex;gap:4px;overflow-x:auto;padding:0 20px;max-width:1280px;margin:0 auto;border-bottom:1px solid var(--line)}
+.nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;font:700 14.5px var(--body);color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
+main{max-width:1280px;margin:0 auto;padding:20px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.bar .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpi b{display:block;font:800 30px/1.1 var(--display)}
+.kpi span{font-size:13px;color:var(--ink-2)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px}
+.tbl-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12.5px;color:var(--ink-2);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;border:1px solid var(--line);color:var(--ink-2)}
+.tag.ok{border-color:var(--ok);color:var(--ok)} .tag.bad{border-color:var(--red);color:var(--red)} .tag.warn{border-color:var(--warn);color:var(--warn)}
+.row-actions{display:flex;gap:6px;justify-content:flex-end}
+.chart{width:100%;height:190px;display:block}
+.chart .s{fill:var(--line)} .chart .w{fill:var(--red)} .chart text{fill:var(--ink-2);font:11px var(--body)}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.bars .r{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13.5px;margin-bottom:8px}
+.bars i{grid-column:1/-1;height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
+.bars i::after{content:"";display:block;height:100%;width:var(--w);background:var(--red)}
+.bars em{font-style:normal;color:var(--ink-2)}
+.empty{padding:30px;text-align:center;color:var(--ink-2)}
+dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--ink);padding:20px;width:min(520px,94vw)}
+dialog::backdrop{background:rgba(20,10,5,.5)}
+.form{display:grid;gap:12px}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.form .two{grid-template-columns:1fr}}
+label.f{display:grid;gap:4px;font-size:13.5px;font-weight:700}
+label.c{display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px}
+label.c input{width:18px;height:18px;accent-color:var(--red)}
+input[type=color]{width:46px;height:36px;padding:0;border:1px solid var(--line);border-radius:8px;background:none}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+.settings{max-width:760px}
+.settings section{margin-bottom:22px}
+.settings h3{font-size:18px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<section id="login">
+  <form id="loginForm">
+    <h1 style="font-size:30px">Painel da Roleta</h1>
+    <p class="hint" style="margin:0">Acesso restrito à administração do Achei no Pão.</p>
+    <label class="f">E-mail<input type="email" id="email" required></label>
+    <button class="btn">Receber link de acesso</button>
+    <p class="hint" id="loginMsg"></p>
+  </form>
+</section>
+
+<section id="app">
+  <div id="demoBar" hidden style="background:var(--ink);color:var(--panel);text-align:center;font-size:13px;padding:7px 12px">Demonstração com dados fictícios — pode mexer à vontade, nada é salvo.</div>
+  <div class="top"><h1>Roleta Achei no Pão</h1><div style="display:flex;gap:10px;align-items:center"><span class="hint" id="who"></span><button class="btn ghost sm" id="logout">Sair</button></div></div>
+  <nav class="nav" role="tablist">
+    <button data-v="dados" aria-selected="true">Dados</button>
+    <button data-v="premios" aria-selected="false">Prêmios</button>
+    <button data-v="anunciantes" aria-selected="false">Anunciantes</button>
+    <button data-v="padarias" aria-selected="false">Padarias</button>
+    <button data-v="ganhadores" aria-selected="false">Ganhadores</button>
+    <button data-v="jogadores" aria-selected="false">Jogadores</button>
+    <button data-v="regras" aria-selected="false">Regras e limites</button>
+  </nav>
+  <main id="main"></main>
+</section>
+
+<dialog id="dlg"><form method="dialog" class="form" id="dlgForm"></form></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="painel-demo-data.js"></script>
+<script>
+(async function(){
+const C = window.PAINEL, $ = s=>document.querySelector(s);
+const DEMO = C.SUPABASE_URL.includes('SEU-PROJETO');
+const sb = DEMO ? window.makeMock() : supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
+const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2800); };
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const N = n => new Intl.NumberFormat('pt-BR').format(n||0);
+const dt = d => d ? new Date(d).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '—';
+const phoneFmt = p => p ? `(${p.slice(2,4)}) ${p.slice(4,5)} ${p.slice(5,9)}-${p.slice(9)}` : '';
+
+
+async function saveFile(blob, name){
+  try { if (window.claude && window.claude.use){ const d = await window.claude.use('downloads'); if (d){ await d.save({ filename:name, data:blob }); toast('Arquivo salvo'); return; } } }
+  catch(e){ if (e && e.code==='declined') return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.append(a); a.click(); a.remove();
+}
+
+/* ---------- Auth ---------- */
+$('#loginForm').onsubmit = async e=>{ e.preventDefault();
+  const { error } = await sb.auth.signInWithOtp({ email:$('#email').value, options:{ emailRedirectTo:location.href.split('#')[0], shouldCreateUser:false } });
+  $('#loginMsg').textContent = error ? 'Não foi possível enviar: '+error.message : 'Abra o link que enviamos para o seu e-mail.'; };
+$('#logout').onclick = ()=>sb.auth.signOut();
+let started = false;
+if (DEMO){ $('#demoBar').hidden = false; start({ user:{ email:'demonstração' } }); $('#logout').hidden = true; }
+else {
+  sb.auth.onAuthStateChange((_e,s)=> s ? start(s) : stop());
+  const { data:{ session } } = await sb.auth.getSession(); session ? start(session) : stop();
+}
+function stop(){ started=false; $('#app').style.display='none'; $('#login').style.display='grid'; }
+async function start(s){
+  if (started) return; started = true;
+  const { data:isAdmin } = await sb.rpc('is_admin');
+  if (!isAdmin){ $('#loginMsg').textContent='Este e-mail não é administrador. Veja o README para liberar o acesso.'; await sb.auth.signOut(); return; }
+  $('#login').style.display='none'; $('#app').style.display='block'; $('#who').textContent=s.user.email;
+  go('dados');
+}
+
+/* ---------- Navegação ---------- */
+const views = {};
+document.querySelector('.nav').onclick = e=>{ const b=e.target.closest('[data-v]'); if(b) go(b.dataset.v); };
+function go(v){ document.querySelectorAll('.nav button').forEach(b=>b.setAttribute('aria-selected', b.dataset.v===v)); $('#main').innerHTML='<p class="empty">Carregando…</p>'; views[v](); }
+async function q(p){ const { data, error } = await p; if (error){ toast(error.message); throw error; } return data; }
+
+/* ---------- Formulário genérico ---------- */
+function openForm(title, fields, values={}, onSave, extra=''){
+  const f = $('#dlgForm');
+  const input = fl => {
+    const v = values[fl.k] ?? fl.def ?? '';
+    if (fl.t==='checkbox') return `<label class="c"><input type="checkbox" name="${fl.k}" ${v?'checked':''}> ${fl.l}</label>`;
+    let el;
+    if (fl.t==='select') el = `<select name="${fl.k}">${fl.opts.map(([o,l])=>`<option value="${esc(o)}" ${String(v)===String(o)?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+    else if (fl.t==='textarea') el = `<textarea name="${fl.k}">${esc(v)}</textarea>`;
+    else el = `<input type="${fl.t||'text'}" name="${fl.k}" value="${esc(v)}" ${fl.req?'required':''} ${fl.attrs||''} placeholder="${esc(fl.ph||'')}">`;
+    return `<label class="f">${fl.l}${el}${fl.hint?`<span class="hint" style="font-weight:400">${fl.hint}</span>`:''}</label>`;
+  };
+  f.innerHTML = `<h2>${esc(title)}</h2>` + fields.map(fl=> Array.isArray(fl) ? `<div class="two">${fl.map(input).join('')}</div>` : input(fl)).join('')
+    + extra + `<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" value="cancel" formnovalidate>Cancelar</button><button class="btn" value="ok">Salvar</button></div>`;
+  const dlg = $('#dlg');
+  dlg.onclose = async ()=>{
+    if (dlg.returnValue!=='ok') return;
+    const out = {};
+    fields.flat().forEach(fl=>{ const el=f.elements[fl.k]; if(!el) return;
+      let v = fl.t==='checkbox' ? el.checked : el.value.trim();
+      if (fl.t==='number') v = v==='' ? null : Number(v);
+      if (fl.t==='datetime-local') v = v ? new Date(v).toISOString() : null;
+      if (fl.nullable && v==='') v = null;
+      out[fl.k]=v; });
+    try { await onSave(out); } catch(e){}
+  };
+  dlg.returnValue=''; dlg.showModal();
+}
+const toLocalInput = iso => iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16) : '';
+
+/* ========== DADOS ========== */
+let days = 30;
+views.dados = async ()=>{
+  const d = await q(sb.rpc('dashboard', { p_days:days }));
+  const rate = d.won ? Math.round(d.redeemed/d.won*100) : 0;
+  $('#main').innerHTML = `
+    <div class="bar"><h2>Como a roleta está indo</h2>
+      <div class="tools"><select id="days" style="width:auto">${[[7,'7 dias'],[30,'30 dias'],[90,'90 dias'],[365,'1 ano']].map(([v,l])=>`<option value="${v}" ${v===days?'selected':''}>Últimos ${l}</option>`).join('')}</select></div></div>
+    <div class="kpis">
+      ${kpi(d.today,'giros hoje')}${kpi(d.spins,'giros no período')}${kpi(d.players,'jogadores únicos')}${kpi(d.new_players,'novos cadastros')}
+      ${kpi(d.won,'prêmios ganhos')}${kpi(d.redeemed,'prêmios entregues')}${kpi(rate+'%','taxa de resgate',true)}
+    </div>
+    <div class="box"><h3 style="margin-bottom:8px">Giros por dia</h3><div id="chart"></div>
+      <div class="legend"><span><span class="dot" style="background:var(--line)"></span>giros</span><span><span class="dot" style="background:var(--red)"></span>com prêmio</span></div></div>
+    <div class="cols">
+      <div class="box bars"><h3 style="margin-bottom:10px">Por padaria</h3>${bars(d.by_bakery.map(x=>({v:x.name,n:x.spins,s:N(x.players)+' jogadores'})))}</div>
+      <div class="box bars"><h3 style="margin-bottom:10px">Por anunciante</h3>${bars(d.by_advertiser.map(x=>({v:x.name,n:x.won,s:N(x.redeemed)+' entregues'})))}</div>
+      <div class="box bars"><h3 style="margin-bottom:10px">Por bairro</h3>${bars((d.by_neighborhood||[]).map(x=>({v:x.name,n:x.players,s:'jogadores · '+N(x.spins)+' giros'})))}</div>
+      <div class="box bars"><h3 style="margin-bottom:10px">Por horário</h3>${bars(hourBuckets(d.by_hour))}</div>
+    </div>
+    <div class="cols">
+      <div class="box"><h3>Aparelhos com vários números</h3><p class="hint">Mesmo aparelho jogando com 2 ou mais WhatsApps. Pode ser uma família — ou alguém tentando burlar.</p>${suspTable(d.suspicious_devices,'Aparelho','device')}</div>
+      <div class="box"><h3>Redes com muitos números</h3><p class="hint">5 ou mais WhatsApps na mesma rede. Normal no Wi-Fi da padaria; estranho em outro lugar.</p>${suspTable(d.suspicious_networks,'Rede','network')}</div>
+    </div>`;
+  $('#days').onchange = e=>{ days=+e.target.value; views.dados(); };
+  $('#chart').append(dayChart(d.by_day));
+};
+const kpi = (v,l,raw) => `<div class="kpi"><b>${raw?v:N(v)}</b><span>${l}</span></div>`;
+function bars(items){
+  if (!items.length) return '<p class="hint">Sem dados no período.</p>';
+  const max = Math.max(...items.map(i=>i.n),1);
+  return items.slice(0,10).map(i=>`<div class="r"><span>${esc(i.v)}</span><em>${N(i.n)}${i.s?' · '+i.s:''}</em><i style="--w:${i.n/max*100}%"></i></div>`).join('');
+}
+function hourBuckets(rows){ return [['Manhã (5–12h)',5,12],['Tarde (12–18h)',12,18],['Noite (18–24h)',18,24],['Madrugada (0–5h)',0,5]].map(([v,a,z])=>({v,n:rows.filter(r=>r.h>=a&&r.h<z).reduce((x,r)=>x+r.n,0)})); }
+function suspTable(rows,label,key){
+  if (!rows.length) return '<p class="empty" style="padding:14px">Nada suspeito no período.</p>';
+  return `<div class="tbl-wrap" style="margin-top:10px"><table><tr><th>${label}</th><th class="num">WhatsApps</th><th class="num">Giros</th></tr>${rows.map(r=>`<tr><td>${esc(r[key])}…</td><td class="num">${r.phones}</td><td class="num">${r.spins}</td></tr>`).join('')}</table></div>`;
+}
+function dayChart(rows){
+  const fmt = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Recife'});
+  const map = Object.fromEntries(rows.map(r=>[r.day,r]));
+  const list=[]; for(let i=days-1;i>=0;i--){ const k=fmt.format(new Date(Date.now()-i*864e5)); list.push([k, map[k]?.spins||0, map[k]?.won||0]); }
+  const W=900,H=190,P=30,max=Math.max(1,...list.map(x=>x[1])),bw=(W-P)/list.length;
+  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Giros por dia"><text x="0" y="12">${max}</text>`;
+  const step=Math.ceil(list.length/10);
+  list.forEach(([d,n,w],i)=>{ const x=P+i*bw+bw*.12, bwi=Math.max(1,bw*.76), h=n/max*(H-36), hw=w/max*(H-36);
+    s+=`<rect class="s" x="${x}" width="${bwi}" y="${H-18-h}" height="${h}" rx="2"><title>${d.split('-').reverse().join('/')}: ${n} giros, ${w} prêmios</title></rect><rect class="w" x="${x}" width="${bwi}" y="${H-18-hw}" height="${hw}" rx="2"/>`;
+    if(i%step===0) s+=`<text x="${P+i*bw}" y="${H-3}">${d.slice(8)}/${d.slice(5,7)}</text>`; });
+  const wrap=document.createElement('div'); wrap.innerHTML=s+'</svg>'; return wrap.firstChild;
+}
+
+/* ========== PRÊMIOS ========== */
+views.premios = async ()=>{
+  const [prizes, advs, st] = await Promise.all([
+    q(sb.from('prizes').select('*, advertisers(name,color,active)').order('created_at')),
+    q(sb.from('advertisers').select('id,name').order('name')),
+    q(sb.from('settings').select('lose_weight').single())
+  ]);
+  const pool = prizes.filter(p=>p.active && p.advertisers?.active && p.weight>0 && (p.stock_total==null || p.stock_used<p.stock_total));
+  const total = pool.reduce((a,p)=>a+p.weight,0) + st.lose_weight;
+  const chance = p => pool.includes(p) && total ? (p.weight/total*100).toFixed(1).replace('.',',')+'%' : '—';
+  $('#main').innerHTML = `
+    <div class="bar"><div><h2>Prêmios</h2><p class="hint">Chance de não ganhar nada: <b>${total?(st.lose_weight/total*100).toFixed(1).replace('.',','):'100'}%</b> (peso ${st.lose_weight}, ajuste em Regras e limites).</p></div>
+      <div class="tools"><button class="btn" id="add" ${advs.length?'':'disabled'}>Novo prêmio</button></div></div>
+    ${!advs.length?'<p class="box empty">Cadastre um anunciante primeiro.</p>':''}
+    <div class="tbl-wrap"><table><tr><th>Prêmio</th><th>Anunciante</th><th class="num">Peso</th><th class="num">Chance por giro</th><th class="num">Estoque</th><th class="num">Limite/dia</th><th>Status</th><th></th></tr>
+    ${prizes.map(p=>`<tr><td><span class="dot" style="background:${esc(p.color||p.advertisers?.color)}"></span><b>${esc(p.name)}</b>${p.description?`<div class="hint">${esc(p.description)}</div>`:''}</td>
+      <td>${esc(p.advertisers?.name)}</td><td class="num">${p.weight}</td><td class="num">${chance(p)}</td>
+      <td class="num">${p.stock_total==null?`${N(p.stock_used)} / ∞`:`${N(p.stock_used)} / ${N(p.stock_total)}`}</td>
+      <td class="num">${p.daily_cap??'—'}</td>
+      <td>${!p.active?'<span class="tag">Pausado</span>':p.stock_total!=null&&p.stock_used>=p.stock_total?'<span class="tag warn">Esgotado</span>':!p.advertisers?.active?'<span class="tag">Anunciante pausado</span>':'<span class="tag ok">Na roleta</span>'}</td>
+      <td><div class="row-actions"><button class="btn ghost sm" data-edit="${p.id}">Editar</button><button class="btn ghost sm" data-del="${p.id}">Apagar</button></div></td></tr>`).join('') || '<tr><td colspan="8" class="empty">Nenhum prêmio ainda.</td></tr>'}
+    </table></div>`;
+  const fields = [
+    {k:'advertiser_id',l:'Anunciante',t:'select',opts:advs.map(a=>[a.id,a.name])},
+    {k:'name',l:'Nome na roleta',req:true,ph:'Açaí 300ml',hint:'Curto: aparece dentro da fatia.'},
+    {k:'description',l:'Detalhes (aparece ao ganhar)',nullable:true,ph:'Válido de seg a sex, exceto feriados'},
+    [{k:'weight',l:'Peso no sorteio',t:'number',def:10,attrs:'min="0"',hint:'Maior peso = sai mais.'},{k:'color',l:'Cor da fatia (opcional)',nullable:true,ph:'#E8402B'}],
+    [{k:'stock_total',l:'Estoque total',t:'number',attrs:'min="0"',hint:'Vazio = ilimitado'},{k:'daily_cap',l:'Máximo por dia',t:'number',attrs:'min="0"',hint:'Vazio = sem limite'}],
+    {k:'active',l:'Ativo na roleta',t:'checkbox',def:true}
+  ];
+  $('#add') && ($('#add').onclick = ()=>openForm('Novo prêmio', fields, {active:true}, async v=>{ await q(sb.from('prizes').insert(v)); toast('Prêmio criado'); views.premios(); }));
+  $('#main').onclick = async e=>{
+    const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]');
+    if (ed){ const p=prizes.find(x=>x.id===ed.dataset.edit);
+      openForm('Editar prêmio', fields, p, async v=>{ await q(sb.from('prizes').update(v).eq('id',p.id)); toast('Prêmio salvo'); views.premios(); },
+        `<p class="hint">Já saíram ${N(p.stock_used)} deste prêmio. <button type="button" class="btn ghost sm" id="resetStock">Zerar contagem</button></p>`);
+      setTimeout(()=>{ const r=$('#resetStock'); if(r) r.onclick=async()=>{ if(!confirm('Zerar a contagem de saídas deste prêmio?')) return; await q(sb.from('prizes').update({stock_used:0}).eq('id',p.id)); $('#dlg').close(); toast('Contagem zerada'); views.premios(); }; });
+    }
+    if (del){ if(!confirm('Apagar este prêmio? Os códigos já ganhos continuam válidos.')) return; await q(sb.from('prizes').delete().eq('id',del.dataset.del)); toast('Prêmio apagado'); views.premios(); }
+  };
+};
+
+/* ========== ANUNCIANTES ========== */
+views.anunciantes = async ()=>{
+  const advs = await q(sb.from('advertisers').select('id,name,segment,contact,color,active,redeem_pin_hash,prizes(count),claims(count)').order('name'));
+  $('#main').innerHTML = `
+    <div class="bar"><div><h2>Anunciantes</h2><p class="hint">Cada anunciante valida os prêmios na página <b>resgate.html</b> com o PIN dele.</p></div><div class="tools"><button class="btn" id="add">Novo anunciante</button></div></div>
+    <div class="tbl-wrap"><table><tr><th>Anunciante</th><th>Segmento</th><th>Contato</th><th class="num">Prêmios</th><th class="num">Códigos gerados</th><th>PIN</th><th>Status</th><th></th></tr>
+    ${advs.map(a=>`<tr><td><span class="dot" style="background:${esc(a.color)}"></span><b>${esc(a.name)}</b></td><td>${esc(a.segment)}</td><td>${esc(a.contact)}</td>
+      <td class="num">${a.prizes[0]?.count||0}</td><td class="num">${N(a.claims[0]?.count)}</td>
+      <td>${a.redeem_pin_hash?'<span class="tag ok">Definido</span>':'<span class="tag bad">Sem PIN</span>'}</td>
+      <td>${a.active?'<span class="tag ok">Ativo</span>':'<span class="tag">Pausado</span>'}</td>
+      <td><div class="row-actions"><button class="btn ghost sm" data-pin="${a.id}">PIN</button><button class="btn ghost sm" data-edit="${a.id}">Editar</button><button class="btn ghost sm" data-del="${a.id}">Apagar</button></div></td></tr>`).join('') || '<tr><td colspan="8" class="empty">Nenhum anunciante ainda.</td></tr>'}
+    </table></div>`;
+  const fields = [ {k:'name',l:'Nome',req:true}, [{k:'segment',l:'Segmento',ph:'Ótica, açaí, salão…'},{k:'contact',l:'Contato',ph:'WhatsApp ou responsável'}],
+    {k:'color',l:'Cor das fatias',t:'color',def:'#E8402B'}, {k:'active',l:'Ativo (prêmios aparecem na roleta)',t:'checkbox',def:true} ];
+  $('#add').onclick = ()=>openForm('Novo anunciante', fields, {active:true}, async v=>{ await q(sb.from('advertisers').insert(v)); toast('Anunciante criado. Defina o PIN dele.'); views.anunciantes(); });
+  $('#main').onclick = async e=>{
+    const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]'), pin=e.target.closest('[data-pin]');
+    if (ed){ const a=advs.find(x=>x.id===ed.dataset.edit); openForm('Editar anunciante', fields, a, async v=>{ await q(sb.from('advertisers').update(v).eq('id',a.id)); toast('Anunciante salvo'); views.anunciantes(); }); }
+    if (pin){ const a=advs.find(x=>x.id===pin.dataset.pin);
+      openForm('PIN de '+a.name, [{k:'pin',l:'Novo PIN (4 a 8 números)',req:true,attrs:'inputmode="numeric" pattern="[0-9]{4,8}"',hint:'Anote e entregue ao anunciante. Ele não pode ser visto depois, só trocado.'}], {pin:String(Math.floor(1000+Math.random()*9000))},
+        async v=>{ await q(sb.rpc('set_advertiser_pin',{p_id:a.id,p_pin:v.pin})); toast('PIN definido'); views.anunciantes(); }); }
+    if (del){ if(!confirm('Apagar o anunciante e todos os prêmios dele?')) return; await q(sb.from('advertisers').delete().eq('id',del.dataset.del)); toast('Anunciante apagado'); views.anunciantes(); }
+  };
+};
+
+/* ========== PADARIAS ========== */
+views.padarias = async ()=>{
+  const list = await q(sb.from('bakeries').select('*, spins(count)').order('name'));
+  $('#main').innerHTML = `
+    <div class="bar"><div><h2>Padarias</h2><p class="hint">Cada padaria tem um QR próprio — assim você sabe de onde vem cada jogador.</p></div><div class="tools"><button class="btn" id="add">Nova padaria</button></div></div>
+    <div class="tbl-wrap"><table><tr><th>Padaria</th><th>Bairro</th><th>Link da roleta</th><th class="num">Giros</th><th>Status</th><th></th></tr>
+    ${list.map(b=>`<tr><td><b>${esc(b.name)}</b></td><td>${esc(b.neighborhood)}</td><td class="hint">${esc(C.ROLETA_URL)}?b=${esc(b.slug)}</td><td class="num">${N(b.spins[0]?.count)}</td>
+      <td>${b.active?'<span class="tag ok">Ativa</span>':'<span class="tag">Pausada</span>'}</td>
+      <td><div class="row-actions"><button class="btn ghost sm" data-qr="${b.id}">Baixar QR</button><button class="btn ghost sm" data-edit="${b.id}">Editar</button><button class="btn ghost sm" data-del="${b.id}">Apagar</button></div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhuma padaria ainda.</td></tr>'}
+    </table></div>`;
+  const slugify = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
+  const fields = [ {k:'name',l:'Nome',req:true}, [{k:'neighborhood',l:'Bairro'},{k:'slug',l:'Código no link',hint:'Não mude depois de imprimir o QR.'}], {k:'active',l:'Ativa',t:'checkbox',def:true} ];
+  $('#add').onclick = ()=>openForm('Nova padaria', fields, {active:true}, async v=>{ v.slug = slugify(v.slug || v.name); await q(sb.from('bakeries').insert(v)); toast('Padaria criada'); views.padarias(); });
+  $('#main').onclick = async e=>{
+    const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]'), qr=e.target.closest('[data-qr]');
+    if (ed){ const b=list.find(x=>x.id===ed.dataset.edit); openForm('Editar padaria', fields, b, async v=>{ v.slug=slugify(v.slug||v.name); await q(sb.from('bakeries').update(v).eq('id',b.id)); toast('Padaria salva'); views.padarias(); }); }
+    if (del){ if(!confirm('Apagar a padaria? O QR dela para de funcionar. Os giros antigos ficam sem padaria.')) return; await q(sb.from('bakeries').delete().eq('id',del.dataset.del)); toast('Padaria apagada'); views.padarias(); }
+    if (qr){ const b=list.find(x=>x.id===qr.dataset.qr);
+      const opts = size => ({ width:size, height:size, margin:size/25, data:`${C.ROLETA_URL}?b=${b.slug}`, qrOptions:{errorCorrectionLevel:'Q'},
+        dotsOptions:{type:'rounded',color:'#2A1A0E'}, cornersSquareOptions:{type:'extra-rounded',color:'#C8322B'}, cornersDotOptions:{type:'dot',color:'#C8322B'}, backgroundOptions:{color:'#ffffff'} });
+      const dlg=$('#dlg'), f=$('#dlgForm'); dlg.onclose=null;
+      f.innerHTML = `<h2>QR da ${esc(b.name)}</h2><div id="qrPrev" style="width:260px;max-width:100%;aspect-ratio:1;margin:0 auto;border-radius:12px;overflow:hidden"></div>
+        <p class="hint" style="text-align:center;word-break:break-all">${esc(C.ROLETA_URL)}?b=${esc(b.slug)}</p>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" value="cancel">Fechar</button><button type="button" class="btn" id="qrDl">Baixar PNG (2048 px)</button></div>`;
+      dlg.showModal();
+      const prev = new QRCodeStyling(opts(520)); prev.append($('#qrPrev'));
+      $('#qrPrev').firstChild && ($('#qrPrev').firstChild.style.cssText='width:100%;height:100%');
+      $('#qrDl').onclick = async ()=> saveFile(await new QRCodeStyling(opts(2048)).getRawData('png'), `qr-roleta-${b.slug}.png`);
+    }
+  };
+};
+
+/* ========== GANHADORES ========== */
+let claimFilter = 'all', claimSearch = '';
+views.ganhadores = async ()=>{
+  let query = sb.from('claims').select('id,code,prize_name,created_at,expires_at,redeemed_at,redeemed_by,advertisers(name),players(name,phone,neighborhood),spins(bakeries(name))').order('created_at',{ascending:false}).limit(500);
+  const now = new Date().toISOString();
+  if (claimFilter==='open') query = query.is('redeemed_at',null).gt('expires_at',now);
+  if (claimFilter==='done') query = query.not('redeemed_at','is',null);
+  if (claimFilter==='expired') query = query.is('redeemed_at',null).lt('expires_at',now);
+  if (claimSearch) query = query.ilike('code', `%${claimSearch.toUpperCase()}%`);
+  const rows = await q(query);
+  $('#main').innerHTML = `
+    <div class="bar"><h2>Ganhadores</h2><div class="tools">
+      <input type="search" id="search" placeholder="Buscar código" value="${esc(claimSearch)}" style="width:170px">
+      <select id="filter" style="width:auto">${[['all','Todos'],['open','A resgatar'],['done','Entregues'],['expired','Vencidos']].map(([v,l])=>`<option value="${v}" ${v===claimFilter?'selected':''}>${l}</option>`).join('')}</select>
+      <button class="btn ghost" id="csv">Exportar CSV</button></div></div>
+    <div class="tbl-wrap"><table><tr><th>Código</th><th>Prêmio</th><th>Anunciante</th><th>Cliente</th><th>Bairro</th><th>Padaria</th><th>Ganhou</th><th>Status</th><th></th></tr>
+    ${rows.map(r=>{ const exp = !r.redeemed_at && new Date(r.expires_at)<new Date();
+      return `<tr><td><b>${esc(r.code)}</b></td><td>${esc(r.prize_name)}</td><td>${esc(r.advertisers?.name)}</td>
+      <td>${esc(r.players?.name)}<div class="hint">${phoneFmt(r.players?.phone)}</div></td><td>${esc(r.players?.neighborhood)}</td><td>${esc(r.spins?.bakeries?.name)}</td><td>${dt(r.created_at)}</td>
+      <td>${r.redeemed_at?`<span class="tag ok">Entregue</span><div class="hint">${dt(r.redeemed_at)}${r.redeemed_by==='painel'?' (painel)':''}</div>`:exp?'<span class="tag warn">Vencido</span>':`<span class="tag">Até ${new Date(r.expires_at).toLocaleDateString('pt-BR')}</span>`}</td>
+      <td>${!r.redeemed_at&&!exp?`<button class="btn ghost sm" data-redeem="${r.id}">Marcar entregue</button>`:''}</td></tr>`; }).join('') || '<tr><td colspan="9" class="empty">Nenhum resultado.</td></tr>'}
+    </table></div>`;
+  $('#filter').onchange = e=>{ claimFilter=e.target.value; views.ganhadores(); };
+  let t; $('#search').oninput = e=>{ clearTimeout(t); t=setTimeout(()=>{ claimSearch=e.target.value.trim(); views.ganhadores(); },350); };
+  $('#csv').onclick = ()=>{
+    const head=['codigo','premio','anunciante','cliente','whatsapp','bairro','padaria','ganhou_em','validade','entregue_em'];
+    const lines=[head.join(';')].concat(rows.map(r=>[r.code,r.prize_name,r.advertisers?.name,r.players?.name,r.players?.phone,r.players?.neighborhood,r.spins?.bakeries?.name,dt(r.created_at),dt(r.expires_at),dt(r.redeemed_at)].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')));
+    saveFile(new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv'}), 'ganhadores-roleta.csv');
+  };
+  $('#main').onclick = async e=>{ const b=e.target.closest('[data-redeem]'); if(!b) return;
+    if(!confirm('Marcar este prêmio como entregue?')) return;
+    await q(sb.from('claims').update({redeemed_at:new Date().toISOString(), redeemed_by:'painel'}).eq('id',b.dataset.redeem)); toast('Marcado como entregue'); views.ganhadores(); };
+};
+
+/* ========== JOGADORES ========== */
+let playerSearch='', playerNb='';
+views.jogadores = async ()=>{
+  let query = sb.from('players').select('id,name,phone,neighborhood,created_at,verified_at,blocked,spins(count),claims(count)').order('created_at',{ascending:false}).limit(300);
+  if (playerSearch){ const d=playerSearch.replace(/\D/g,''); query = d.length>=4 ? query.ilike('phone',`%${d}%`) : query.ilike('name',`%${playerSearch}%`); }
+  if (playerNb) query = query.eq('neighborhood', playerNb);
+  const [rows, st] = await Promise.all([q(query), q(sb.from('settings').select('neighborhoods').single())]);
+  $('#main').innerHTML = `
+    <div class="bar"><div><h2>Jogadores</h2><p class="hint">Bloqueie quem estiver burlando: o número não consegue mais girar.</p></div>
+      <div class="tools"><select id="nbf" style="width:auto"><option value="">Todos os bairros</option>${(st.neighborhoods||[]).map(n=>`<option ${n===playerNb?'selected':''}>${esc(n)}</option>`).join('')}</select>
+      <input type="search" id="search" placeholder="Nome ou WhatsApp" value="${esc(playerSearch)}" style="width:200px"></div></div>
+    <div class="tbl-wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Bairro</th><th>Cadastro</th><th class="num">Giros</th><th class="num">Prêmios</th><th>Status</th><th></th></tr>
+    ${rows.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${phoneFmt(p.phone)}${p.verified_at?' <span class="tag ok">verificado</span>':''}</td><td>${esc(p.neighborhood)||'<span class="hint">—</span>'}</td><td>${dt(p.created_at)}</td>
+      <td class="num">${N(p.spins[0]?.count)}</td><td class="num">${N(p.claims[0]?.count)}</td>
+      <td>${p.blocked?'<span class="tag bad">Bloqueado</span>':'<span class="tag ok">Ativo</span>'}</td>
+      <td><button class="btn ghost sm" data-block="${p.id}" data-v="${!p.blocked}">${p.blocked?'Desbloquear':'Bloquear'}</button></td></tr>`).join('') || '<tr><td colspan="8" class="empty">Nenhum jogador.</td></tr>'}
+    </table></div>`;
+  let t; $('#search').oninput = e=>{ clearTimeout(t); t=setTimeout(()=>{ playerSearch=e.target.value.trim(); views.jogadores(); },350); };
+  $('#nbf').onchange = e=>{ playerNb=e.target.value; views.jogadores(); };
+  $('#main').onclick = async e=>{ const b=e.target.closest('[data-block]'); if(!b) return;
+    await q(sb.from('players').update({blocked:b.dataset.v==='true'}).eq('id',b.dataset.block)); toast(b.dataset.v==='true'?'Jogador bloqueado':'Jogador desbloqueado'); views.jogadores(); };
+};
+
+/* ========== REGRAS ========== */
+views.regras = async ()=>{
+  const s = await q(sb.from('settings').select('*').single());
+  const sel = (k,opts)=>`<select name="${k}">${opts.map(([v,l])=>`<option value="${v}" ${s[k]==v?'selected':''}>${l}</option>`).join('')}</select>`;
+  const num = (k,min=0,max=1000)=>`<input type="number" name="${k}" value="${s[k]}" min="${min}" max="${max}" required>`;
+  $('#main').innerHTML = `<form class="settings form" id="sf">
+    <section class="box"><h3>Campanha</h3>
+      <label class="f">Nome da campanha<input type="text" name="campaign_name" value="${esc(s.campaign_name)}" required></label>
+      <div class="two" style="margin-top:12px"><label class="f">Começa em<input type="datetime-local" name="starts_at" value="${toLocalInput(s.starts_at)}"><span class="hint">Vazio = já começou</span></label>
+        <label class="f">Termina em<input type="datetime-local" name="ends_at" value="${toLocalInput(s.ends_at)}"><span class="hint">Vazio = sem data</span></label></div>
+      <label class="c" style="margin-top:12px"><input type="checkbox" name="active" ${s.active?'checked':''}> Roleta aberta</label>
+    </section>
+    <section class="box"><h3>Quantas vezes cada cliente pode girar</h3>
+      <div class="two"><label class="f">Giros por WhatsApp${num('spins_per_period',1,100)}</label>
+        <label class="f">A cada${sel('period',[['day','dia'],['week','semana'],['month','mês'],['campaign','campanha inteira']])}</label></div>
+    </section>
+    <section class="box"><h3>Anti-fraude</h3>
+      <div class="two"><label class="f">Giros por aparelho por dia${num('max_spins_device_day',1)}<span class="hint">Barra quem usa vários números no mesmo celular.</span></label>
+        <label class="f">WhatsApps diferentes por aparelho${num('max_phones_per_device',1,20)}<span class="hint">Em 30 dias. 2 permite casal/família dividindo o celular.</span></label></div>
+      <div class="two" style="margin-top:12px"><label class="f">Giros por rede por hora${num('max_spins_ip_hour',1,10000)}<span class="hint">Deixe folga se a padaria tiver Wi-Fi aberto.</span></label>
+        <label class="f">Aparelho confiável por (dias)${num('trusted_device_days',1,365)}<span class="hint">Depois de verificar no WhatsApp, não pede código de novo.</span></label></div>
+      <label class="c" style="margin-top:12px"><input type="checkbox" name="require_otp" ${s.require_otp?'checked':''}> Exigir código por WhatsApp</label>
+      <p class="hint">A proteção mais forte contra números falsos. Precisa do disparador de WhatsApp configurado (veja o README).</p>
+    </section>
+    <section class="box"><h3>Sorteio e prêmios</h3>
+      <div class="two"><label class="f">Peso de “não ganhar”${num('lose_weight',0,100000)}<span class="hint">Comparado com o peso de cada prêmio.</span></label>
+        <label class="f">Fatias de “não ganhar” na roleta${num('lose_slices',0,8)}<span class="hint">Só visual — não muda a chance.</span></label></div>
+      <div class="two" style="margin-top:12px"><label class="f">Texto quando não ganha<input type="text" name="lose_label" value="${esc(s.lose_label)}" required></label>
+        <label class="f">Validade do prêmio (dias)${num('prize_valid_days',1,90)}</label></div>
+    </section>
+    <section class="box"><h3>Bairros</h3>
+      <label class="f">Um bairro por linha<textarea name="neighborhoods" style="min-height:140px" placeholder="Centro&#10;Bela Vista&#10;…">${esc((s.neighborhoods||[]).join('\n'))}</textarea>
+      <span class="hint">O cliente escolhe nesta lista (ou digita, em “Outro bairro”). Quem digitar um bairro da lista com outra grafia é corrigido automaticamente.</span></label>
+    </section>
+    <section class="box"><h3>Regulamento</h3><label class="f">Texto mostrado ao cliente<textarea name="rules_text">${esc(s.rules_text)}</textarea></label></section>
+    <div><button class="btn">Salvar regras</button></div>
+  </form>`;
+  $('#sf').onsubmit = async e=>{ e.preventDefault(); const f=e.target;
+    const v = { campaign_name:f.campaign_name.value.trim(), active:f.active.checked, require_otp:f.require_otp.checked,
+      starts_at:f.starts_at.value?new Date(f.starts_at.value).toISOString():null, ends_at:f.ends_at.value?new Date(f.ends_at.value).toISOString():null,
+      period:f.period.value, neighborhoods:[...new Set(f.neighborhoods.value.split('\n').map(x=>x.trim().replace(/\s+/g,' ')).filter(Boolean))], lose_label:f.lose_label.value.trim(), rules_text:f.rules_text.value.trim(), updated_at:new Date().toISOString() };
+    ['spins_per_period','max_spins_device_day','max_phones_per_device','max_spins_ip_hour','trusted_device_days','lose_weight','lose_slices','prize_valid_days'].forEach(k=>v[k]=Number(f[k].value));
+    await q(sb.from('settings').update(v).eq('id',1)); toast('Regras salvas — já valem para o próximo giro'); };
+};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Roleta Achei no Pão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,800&display=swap" rel="stylesheet">
+<script>
+/* ====== CONFIGURAÇÃO ====== */
+window.ROLETA = {
+  API_URL: "https://vewaheqmxqvgrwjwmvfd.supabase.co/functions/v1/roleta",
+  ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZld2FoZXFteHF2Z3J3andtdmZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjY0NzEsImV4cCI6MjEwMTM0MjQ3MX0.HNG9or-ncNUfH1oAj0bhokUtlFiGDAnH5qKUdM2ep5s",          // a gateway do Supabase pede a anon key mesmo com --no-verify-jwt
+  TURNSTILE_SITEKEY: ""              // opcional: Cloudflare Turnstile (anti-robô)
+};
+</script>
+<style>
+:root{
+  --kraft:#C59A6B; --kraft-dk:#A97B4C; --crumb:#F6E7CF; --ink:#2A1A0E; --ink-2:#6B4E33;
+  --red:#C8322B; --red-ink:#fff; --card:#FFF8EC; --line:#E3CBA6; --win:#1E7A45;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif; --body:"Nunito Sans","Segoe UI",system-ui,sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --kraft:#4A3423; --kraft-dk:#3A281A; --crumb:#2E2117; --ink:#F7EBDA; --ink-2:#D2B898; --card:#2A1E15; --line:#5A4330; --red:#E5544C; --win:#5FD39A;}}
+:root[data-theme="dark"]{--kraft:#4A3423; --kraft-dk:#3A281A; --crumb:#2E2117; --ink:#F7EBDA; --ink-2:#D2B898; --card:#2A1E15; --line:#5A4330; --red:#E5544C; --win:#5FD39A;}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{margin:0;min-height:100%;color:var(--ink);font:400 16px/1.5 var(--body);
+  background:var(--kraft) radial-gradient(circle at 20% 10%,rgba(255,255,255,.14),transparent 50%);
+  background-image:radial-gradient(circle at 20% 10%,rgba(255,255,255,.14),transparent 50%),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.025) 0 2px,transparent 2px 7px);}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.wrap{max-width:460px;margin:0 auto;padding:18px 16px 40px}
+.demo{background:var(--ink);color:var(--crumb);font-size:13px;text-align:center;padding:7px 12px;border-radius:10px;margin-bottom:12px}
+header{text-align:center;margin:6px 0 10px}
+.where{display:inline-block;background:var(--crumb);color:var(--ink-2);font-weight:700;font-size:13px;padding:4px 12px;border-radius:99px}
+h1{font:800 clamp(34px,10vw,46px)/1 var(--display);margin:10px 0 4px;color:var(--crumb);text-shadow:0 2px 0 var(--kraft-dk)}
+.sub{margin:0;color:var(--crumb);opacity:.9;font-weight:600}
+
+.wheel-wrap{position:relative;width:min(380px,100%);aspect-ratio:1;margin:18px auto 8px}
+.pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;
+  border-left:18px solid transparent;border-right:18px solid transparent;border-top:34px solid var(--red);z-index:2;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+#wheel{width:100%;height:100%;display:block;border-radius:50%;box-shadow:0 0 0 8px var(--crumb),0 0 0 11px var(--kraft-dk),0 14px 30px rgba(0,0,0,.25)}
+.hub{position:absolute;inset:50% auto auto 50%;width:22%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+  background:var(--crumb);box-shadow:0 0 0 5px var(--red);display:grid;place-items:center;font:800 13px/1 var(--display);color:var(--red);text-align:center}
+
+.card{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 2px 0 var(--kraft-dk);margin-top:16px}
+label.f{display:grid;gap:4px;font-weight:700;font-size:14px;margin-bottom:12px}
+input[type=text],input[type=tel],select{width:100%;padding:13px 14px;border:2px solid var(--line);border-radius:14px;background:var(--crumb);outline:none;font-size:17px}
+input:focus,select:focus{border-color:var(--red)}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-2) 50%),linear-gradient(135deg,var(--ink-2) 50%,transparent 50%);background-position:calc(100% - 20px) 55%,calc(100% - 14px) 55%;background-size:6px 6px;background-repeat:no-repeat}
+#bairroSel:not([hidden]) + #bairroOutro{margin-top:8px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);margin:4px 0 14px}
+.check input{width:20px;height:20px;accent-color:var(--red);flex:none;margin-top:1px}
+.linkish{background:none;border:0;padding:0;color:var(--red);font-weight:700;text-decoration:underline;cursor:pointer}
+.spin{width:100%;border:0;border-radius:16px;padding:16px;background:var(--red);color:var(--red-ink);font:800 22px var(--display);cursor:pointer;box-shadow:0 4px 0 #8E1F1A}
+.spin:active{transform:translateY(2px);box-shadow:0 2px 0 #8E1F1A}
+.spin:disabled{opacity:.6;cursor:not-allowed}
+.msg{min-height:22px;margin:10px 0 0;text-align:center;font-weight:700;font-size:14.5px;color:var(--red)}
+.left{text-align:center;color:var(--ink-2);font-size:13.5px;margin-top:8px}
+.otp{display:none}
+.otp.show{display:block}
+.otp-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.ghost{border:2px solid var(--line);background:transparent;border-radius:14px;padding:0 14px;font-weight:700;cursor:pointer}
+.sponsors{margin-top:18px;text-align:center;color:var(--crumb);font-size:13px}
+.sponsors b{display:block;font:800 15px var(--display);margin-bottom:4px}
+.closed{text-align:center;padding:30px 10px}
+
+dialog{border:0;border-radius:24px;background:var(--card);color:var(--ink);padding:24px 20px;width:min(400px,92vw);text-align:center}
+dialog::backdrop{background:rgba(30,15,5,.6)}
+.big{font:800 34px/1.05 var(--display);margin:6px 0}
+.code{font:800 30px/1 var(--display);letter-spacing:.06em;background:var(--crumb);border:3px dashed var(--red);border-radius:16px;padding:14px;margin:14px 0 8px;user-select:all}
+.small{font-size:13.5px;color:var(--ink-2);margin:4px 0}
+.win{color:var(--win)}
+.rules{text-align:left;white-space:pre-wrap;font-size:14px}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:5}
+@media (prefers-reduced-motion:reduce){#confetti{display:none}}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+  <div class="demo" id="demo" hidden>Modo demonstração — os giros não são salvos</div>
+  <header>
+    <span class="where" id="where">Carregando…</span>
+    <h1 id="title">Roleta Achei no Pão</h1>
+    <p class="sub">Gire e ganhe prêmios dos nossos anunciantes</p>
+  </header>
+
+  <div class="wheel-wrap" aria-hidden="true">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="760" height="760"></canvas>
+    <div class="hub">Achei<br>no Pão</div>
+  </div>
+
+  <div class="card" id="formCard">
+    <label class="f">Seu nome<input type="text" id="name" autocomplete="given-name" maxlength="60" placeholder="Como podemos te chamar?"></label>
+    <label class="f">Seu WhatsApp<input type="tel" id="phone" autocomplete="tel" inputmode="numeric" placeholder="(81) 9 9999-9999"></label>
+    <label class="f">Seu bairro
+      <select id="bairroSel" hidden></select>
+      <input type="text" id="bairroOutro" maxlength="60" placeholder="Digite seu bairro" autocomplete="address-level3">
+    </label>
+    <div class="otp" id="otpBox">
+      <label class="f">Código que enviamos no WhatsApp
+        <div class="otp-row"><input type="text" id="otp" inputmode="numeric" maxlength="6" placeholder="000000"><button class="ghost" id="resend" type="button">Reenviar</button></div>
+      </label>
+    </div>
+    <label class="check"><input type="checkbox" id="consent"> <span>Li e aceito as <button class="linkish" type="button" id="openRules">regras</button> e autorizo o uso do meu WhatsApp para validar o prêmio.</span></label>
+    <div id="captcha"></div>
+    <button class="spin" id="spinBtn">Girar a roleta</button>
+    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+    <p class="left" id="left"></p>
+  </div>
+
+  <div class="sponsors" id="sponsors"></div>
+</div>
+
+<dialog id="result"><div id="resultBody"></div><button class="spin" id="closeResult" style="margin-top:14px">Fechar</button></dialog>
+<dialog id="rulesDlg"><h2 style="font-family:var(--display);margin:0 0 10px">Regras</h2><p class="rules" id="rulesText"></p><button class="spin" onclick="this.closest('dialog').close()">Entendi</button></dialog>
+
+<script>
+(async function(){
+const R = window.ROLETA;
+const $ = s => document.querySelector(s);
+const DEMO = R.API_URL.includes('SEU-PROJETO');
+const bakery = new URLSearchParams(location.search).get('b') || (DEMO ? 'demo' : '');
+const store = { get:k=>{try{return localStorage.getItem(k)}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}} };
+
+/* ---------- Identificador do aparelho (aleatório, guardado no aparelho) ---------- */
+let device = store.get('ap_device');
+if (!device){ device = Array.from(crypto.getRandomValues(new Uint8Array(18)), b=>b.toString(36).padStart(2,'0')).join('').slice(0,32); store.set('ap_device', device); }
+
+/* ---------- API (ou simulação no modo demo) ---------- */
+const demoState = { spins:0 };
+const DEMO_CFG = {
+  campaign:'Roleta Achei no Pão', open:true, bakery:'Padaria Demonstração',
+  segments:[
+    {key:'p1',label:'Açaí 300ml',advertiser:'Açaí da Praça',color:'#6B2C91'},
+    {key:'p2',label:'10% em óculos',advertiser:'Ótica Visão',color:'#1F6FB2'},
+    {key:'p3',label:'Escova grátis',advertiser:'Studio Bella',color:'#D14D8A'},
+    {key:'p4',label:'Pizza broto',advertiser:'Pizzaria Forno',color:'#E07A1F'},
+    {key:'p5',label:'Frete grátis',advertiser:'Caramelou',color:'#2E8B57'}
+  ],
+  lose_label:'Não foi dessa vez', lose_slices:3, spins_per_period:3, period:'day', require_otp:false,
+  neighborhoods:['Centro','Bela Vista','Nova Santa Cruz','São Cristóvão','Malaquias Cardoso','Santa Terezinha'],
+  rules:'Demonstração: 3 giros por aparelho. Na versão real, os limites, prêmios e estoques são definidos no painel.'
+};
+async function api(body){
+  if (DEMO){
+    await new Promise(r=>setTimeout(r,400));
+    if (body.acao==='girar'){
+      if (demoState.spins >= 3) return { error:'limite' };
+      demoState.spins++;
+      const won = Math.random() < .45; const seg = DEMO_CFG.segments[Math.floor(Math.random()*DEMO_CFG.segments.length)];
+      return won ? { won:true, key:seg.key, prize:seg.label, advertiser:seg.advertiser, code:'AP-DEMO'+Math.floor(Math.random()*900+100),
+        expires_at:new Date(Date.now()+7*864e5).toISOString(), remaining:3-demoState.spins }
+        : { won:false, key:'lose', remaining:3-demoState.spins };
+    }
+    return { ok:true };
+  }
+  const opts = body ? { method:'POST', body:JSON.stringify(body) } : {};
+  const url = body ? R.API_URL : `${R.API_URL}?acao=config&b=${encodeURIComponent(bakery)}`;
+  const r = await fetch(url, { ...opts, headers:{ 'Content-Type':'application/json', apikey:R.ANON_KEY, Authorization:'Bearer '+R.ANON_KEY } });
+  return r.json();
+}
+
+const ERRORS = {
+  telefone_invalido:'Confira o número: DDD + 9 dígitos.',
+  consentimento:'Marque que aceita as regras para girar.',
+  limite:'Você já usou seus giros. Volte {next}!',
+  limite_aparelho:'Este aparelho já atingiu o limite de giros de hoje.',
+  aparelho_com_muitos_numeros:'Este aparelho já foi usado com outros números.',
+  limite_rede:'Muitos giros nesta rede agora. Tente em alguns minutos ou use os dados móveis.',
+  bairro:'Diga seu bairro para a gente.',
+  bloqueado:'Este número não pode participar. Fale com a padaria.',
+  campanha_fechada:'A roleta está fechada no momento.',
+  padaria_invalida:'QR code inválido. Escaneie o código da padaria de novo.',
+  otp_invalido:'Código incorreto ou expirado.',
+  otp_indisponivel:'Verificação indisponível agora. Tente mais tarde.',
+  muitos_codigos:'Muitos códigos pedidos. Aguarde 1 hora.',
+  aguarde:'Aguarde 1 minuto para pedir outro código.',
+  envio_falhou:'Não conseguimos enviar o código. Confira o número.',
+  captcha:'Confirme que você não é um robô.',
+  aparelho_invalido:'Recarregue a página e tente de novo.',
+  interno:'Algo deu errado. Tente de novo.'
+};
+const periodTxt = { day:'por dia', week:'por semana', month:'por mês', campaign:'na campanha' };
+function nextTxt(iso){
+  if(!iso) return 'na próxima campanha';
+  const d = new Date(iso), now = new Date(), tom = new Date(now); tom.setDate(now.getDate()+1);
+  if (d.toDateString()===tom.toDateString() || d - now < 864e5) return 'amanhã';
+  return 'a partir de ' + d.toLocaleDateString('pt-BR',{weekday:'long', day:'numeric'});
+}
+const say = (t, ok) => { const m=$('#msg'); m.textContent=t||''; m.style.color = ok ? 'var(--win)' : 'var(--red)'; };
+
+/* ---------- Config ---------- */
+let cfg;
+try { cfg = DEMO ? DEMO_CFG : await api(); } catch(e){ cfg = { error:'interno' }; }
+$('#demo').hidden = !DEMO;
+if (cfg.error){ $('#where').textContent='Indisponível'; $('#formCard').innerHTML=`<p class="closed">${ERRORS[cfg.error]||ERRORS.interno}</p>`; drawWheel([]); return; }
+$('#where').textContent = cfg.bakery; $('#title').textContent = cfg.campaign;
+$('#rulesText').textContent = cfg.rules + `\n\nLimite: ${cfg.spins_per_period} giro${cfg.spins_per_period>1?'s':''} ${periodTxt[cfg.period]} por WhatsApp.`;
+$('#openRules').onclick = ()=>$('#rulesDlg').showModal();
+const advs = [...new Set(cfg.segments.map(s=>s.advertiser))];
+if (advs.length) $('#sponsors').innerHTML = '<b>Prêmios oferecidos por</b>' + advs.map(a=>a.replace(/</g,'&lt;')).join(' · ');
+if (!cfg.open){ $('#formCard').innerHTML = `<p class="closed">${cfg.starts_at && new Date(cfg.starts_at)>new Date() ? 'A roleta abre em '+new Date(cfg.starts_at).toLocaleDateString('pt-BR')+'.' : ERRORS.campanha_fechada}</p>`; }
+
+$('#name').value = store.get('ap_name') || '';
+
+/* ---------- Bairro: lista do painel + "Outro bairro" ---------- */
+const nbList = cfg.neighborhoods || [];
+const savedNb = store.get('ap_bairro') || '';
+if (nbList.length){
+  const sel = $('#bairroSel'); sel.hidden = false;
+  sel.innerHTML = '<option value="">Escolha seu bairro</option>' + nbList.map(n=>`<option>${n.replace(/</g,'&lt;')}</option>`).join('') + '<option value="__outro">Outro bairro</option>';
+  const known = nbList.find(n=>n.toLowerCase()===savedNb.toLowerCase());
+  sel.value = known || (savedNb ? '__outro' : '');
+  $('#bairroOutro').hidden = sel.value !== '__outro';
+  if (!known) $('#bairroOutro').value = savedNb;
+  sel.onchange = ()=>{ $('#bairroOutro').hidden = sel.value!=='__outro'; if(sel.value==='__outro') $('#bairroOutro').focus(); };
+} else { $('#bairroOutro').value = savedNb; }
+const getBairro = () => { const sel=$('#bairroSel'); return (!sel.hidden && sel.value && sel.value!=='__outro') ? sel.value : $('#bairroOutro').value.trim(); };
+$('#phone').value = store.get('ap_phone') || '';
+$('#phone').addEventListener('input', e=>{
+  let d=e.target.value.replace(/\D/g,'').slice(0,11);
+  e.target.value = d.length>7 ? `(${d.slice(0,2)}) ${d.slice(2,3)} ${d.slice(3,7)}-${d.slice(7)}` : d.length>2 ? `(${d.slice(0,2)}) ${d.slice(2)}` : d;
+});
+
+/* ---------- Turnstile (opcional) ---------- */
+let captchaToken = null;
+if (!DEMO && R.TURNSTILE_SITEKEY){
+  window.onTurnstile = t => captchaToken = t;
+  $('#captcha').innerHTML = `<div class="cf-turnstile" data-sitekey="${R.TURNSTILE_SITEKEY}" data-callback="onTurnstile" style="margin-bottom:12px"></div>`;
+  const s=document.createElement('script'); s.src='https://challenges.cloudflare.com/turnstile/v0/api.js'; s.async=true; document.head.append(s);
+}
+
+/* ---------- Roleta ---------- */
+const slices = [];
+(function build(){
+  const prizes = cfg.segments.slice(), loses = cfg.lose_slices;
+  const total = prizes.length + loses;
+  const step = loses ? total / loses : Infinity;
+  let li = 0;
+  for (let i=0;i<total;i++){
+    if (loses && li < loses && Math.floor(li*step) === i){ slices.push({ key:'lose', label:cfg.lose_label, color:null }); li++; }
+    else slices.push(prizes.shift() || { key:'lose', label:cfg.lose_label });
+  }
+})();
+const cv = $('#wheel'), ctx = cv.getContext('2d');
+function drawWheel(list){
+  const n = Math.max(list.length,1), c = cv.width/2, r = c-6, a = 2*Math.PI/n;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if (!list.length){ ctx.fillStyle='#E3CBA6'; ctx.beginPath(); ctx.arc(c,c,r,0,7); ctx.fill(); return; }
+  list.forEach((s,i)=>{
+    const start = -Math.PI/2 + i*a - a/2;
+    ctx.beginPath(); ctx.moveTo(c,c); ctx.arc(c,c,r,start,start+a); ctx.closePath();
+    ctx.fillStyle = s.key==='lose' ? (i%2?'#F6E7CF':'#EBD3AE') : s.color; ctx.fill();
+    ctx.strokeStyle='rgba(42,26,14,.25)'; ctx.lineWidth=3; ctx.stroke();
+    ctx.save(); ctx.translate(c,c); ctx.rotate(start + a/2);
+    ctx.textAlign='right'; ctx.fillStyle = s.key==='lose' ? '#6B4E33' : '#fff';
+    const fs = n>10 ? 26 : 32;
+    ctx.font = `800 ${fs}px "Baloo 2", sans-serif`;
+    wrap(s.label, r-26, fs, s.advertiser);
+    ctx.restore();
+  });
+}
+function wrap(text, x, fs, adv){
+  const max = cv.width*0.3, words = text.split(' '), lines = [''];
+  words.forEach(w=>{ const t=(lines[lines.length-1]+' '+w).trim(); if(ctx.measureText(t).width>max && lines[lines.length-1]) lines.push(w); else lines[lines.length-1]=t; });
+  const ls = lines.slice(0,2), h = fs*.95, extra = adv ? 1 : 0;
+  const y0 = -((ls.length+extra-1)*h)/2 + fs*.33;
+  ls.forEach((l,i)=>ctx.fillText(l, x, y0 + i*h));
+  if (adv){ ctx.font=`600 ${Math.round(fs*.62)}px "Nunito Sans", sans-serif`; ctx.globalAlpha=.85; ctx.fillText(adv.slice(0,22), x, y0 + ls.length*h); ctx.globalAlpha=1; }
+}
+document.fonts && document.fonts.ready.then(()=>drawWheel(slices));
+drawWheel(slices);
+
+let rotation = 0;
+function spinTo(key){
+  const idxs = slices.map((s,i)=>s.key===key?i:-1).filter(i=>i>=0);
+  const idx = idxs.length ? idxs[Math.floor(Math.random()*idxs.length)] : 0;
+  const a = 360/slices.length;
+  const jitter = (Math.random()-.5) * a * .6;
+  const target = 360 - (idx*a) + jitter;                        // fatia idx sob o ponteiro (topo)
+  const current = ((rotation % 360) + 360) % 360;
+  rotation += 360*6 + ((target - current + 360) % 360);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  cv.style.transition = reduce ? 'none' : 'transform 5.2s cubic-bezier(.12,.62,.08,1)';
+  cv.style.transform = `rotate(${rotation}deg)`;
+  return new Promise(r=>setTimeout(r, reduce?50:5300));
+}
+
+/* ---------- Fluxo ---------- */
+let busy = false, otpShown = false;
+async function sendCode(){
+  const r = await api({ acao:'codigo', phone:$('#phone').value });
+  if (r.error) say(ERRORS[r.error]||ERRORS.interno); else say('Enviamos um código no seu WhatsApp.', true);
+}
+$('#resend').onclick = sendCode;
+
+$('#spinBtn').addEventListener('click', async ()=>{
+  if (busy) return;
+  const phone = $('#phone').value, name = $('#name').value.trim();
+  if (!name) return say('Diga seu nome para a gente.');
+  if (phone.replace(/\D/g,'').length !== 11) return say(ERRORS.telefone_invalido);
+  const bairro = getBairro();
+  if (bairro.length < 2) return say(ERRORS.bairro);
+  if (!$('#consent').checked) return say(ERRORS.consentimento);
+  store.set('ap_name', name); store.set('ap_phone', phone); store.set('ap_bairro', bairro);
+  busy = true; $('#spinBtn').disabled = true; say('');
+  try{
+    const res = await api({ acao:'girar', phone, name, bairro, b:bakery, device, consent:true, otp:$('#otp').value || undefined, captcha:captchaToken || undefined });
+    if (res.error === 'otp_necessario'){
+      if (!otpShown){ otpShown = true; $('#otpBox').classList.add('show'); await sendCode(); $('#otp').focus(); }
+      else say('Digite o código que enviamos no WhatsApp.');
+      return;
+    }
+    if (res.error){ say((ERRORS[res.error]||ERRORS.interno).replace('{next}', nextTxt(res.next_at))); if(window.turnstile) turnstile.reset(); return; }
+    $('#otpBox').classList.remove('show'); otpShown = false; $('#otp').value='';
+    await spinTo(res.key);
+    showResult(res);
+    $('#left').textContent = res.remaining > 0 ? `Você ainda tem ${res.remaining} giro${res.remaining>1?'s':''}.` : `Seus giros acabaram. Volte ${nextTxt(res.next_at)}!`;
+  } catch(e){ say(ERRORS.interno); }
+  finally { busy = false; $('#spinBtn').disabled = false; }
+});
+
+function showResult(r){
+  const b = $('#resultBody'); const esc = s=>String(s||'').replace(/</g,'&lt;');
+  if (r.won){
+    b.innerHTML = `<p class="small win" style="font-weight:800">Você ganhou!</p>
+      <p class="big">${esc(r.prize)}</p><p class="small">oferecido por <b>${esc(r.advertiser)}</b></p>
+      ${r.description?`<p class="small">${esc(r.description)}</p>`:''}
+      <div class="code">${esc(r.code)}</div>
+      <p class="small">Mostre este código em <b>${esc(r.advertiser)}</b> até ${new Date(r.expires_at).toLocaleDateString('pt-BR')}.<br>Tire um print para não perder.</p>`;
+    confetti();
+  } else {
+    b.innerHTML = `<p class="big">${esc(cfg.lose_label)}</p><p class="small">${r.remaining>0?'Tente de novo!':'Obrigado por participar. Volte '+nextTxt(r.next_at)+'!'}</p>`;
+  }
+  $('#result').showModal();
+}
+$('#closeResult').onclick = ()=>$('#result').close();
+
+/* ---------- Confete ---------- */
+function confetti(){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const c=$('#confetti'), x=c.getContext('2d'); c.width=innerWidth; c.height=innerHeight;
+  const cols=['#C8322B','#F2B632','#2E8B57','#1F6FB2','#F6E7CF'];
+  const ps=Array.from({length:140},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,v:2+Math.random()*4,s:5+Math.random()*6,r:Math.random()*6,c:cols[Math.floor(Math.random()*5)]}));
+  let t=0; (function f(){ x.clearRect(0,0,c.width,c.height); ps.forEach(p=>{p.y+=p.v;p.x+=Math.sin((t+p.r)*.05)*1.5;x.fillStyle=p.c;x.save();x.translate(p.x,p.y);x.rotate(t*.05+p.r);x.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);x.restore();});
+    if(++t<220) requestAnimationFrame(f); else x.clearRect(0,0,c.width,c.height); })();
+}
+})();
+</script>
+</body>
+</html>
