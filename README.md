@@ -56,8 +56,9 @@ supabase secrets set SPIN_SALT="$(openssl rand -hex 24)"
 supabase functions deploy roleta --no-verify-jwt
 ```
 
-**Seu acesso de administrador** — faça login uma vez no painel (o e-mail precisa existir em
-Authentication → Users; crie lá) e rode no SQL Editor:
+**Seu acesso de administrador** — o painel entra com e-mail e senha. Crie o usuário em
+Authentication → Users → Add user → Create new user (com senha e "Auto Confirm User" marcado)
+e rode no SQL Editor:
 
 ```sql
 insert into public.admins (user_id)
@@ -66,7 +67,7 @@ select id from auth.users where email = 'seu@email.com';
 
 **Configure as páginas** (bloco no topo de cada uma): `API_URL`/`ANON_KEY` em `roleta.html` e
 `resgate.html`; `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`ROLETA_URL` em `painel.html`. Hospede a pasta
-`web/` (Vercel, Netlify…) e adicione a URL do painel em Authentication → URL Configuration.
+`web/` (Vercel, Netlify…).
 
 **Restrinja a origem** (recomendado em produção):
 `supabase secrets set ALLOWED_ORIGINS="https://seudominio.com"`

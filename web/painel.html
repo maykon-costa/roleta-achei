@@ -92,8 +92,9 @@ input[type=color]{width:46px;height:36px;padding:0;border:1px solid var(--line);
   <form id="loginForm">
     <h1 style="font-size:30px">Painel da Roleta</h1>
     <p class="hint" style="margin:0">Acesso restrito à administração do Achei no Pão.</p>
-    <label class="f">E-mail<input type="email" id="email" required></label>
-    <button class="btn">Receber link de acesso</button>
+    <label class="f">E-mail<input type="email" id="email" autocomplete="username" required></label>
+    <label class="f">Senha<input type="password" id="password" autocomplete="current-password" required></label>
+    <button class="btn">Entrar</button>
     <p class="hint" id="loginMsg"></p>
   </form>
 </section>
@@ -137,8 +138,9 @@ async function saveFile(blob, name){
 
 /* ---------- Auth ---------- */
 $('#loginForm').onsubmit = async e=>{ e.preventDefault();
-  const { error } = await sb.auth.signInWithOtp({ email:$('#email').value, options:{ emailRedirectTo:location.href.split('#')[0], shouldCreateUser:false } });
-  $('#loginMsg').textContent = error ? 'Não foi possível enviar: '+error.message : 'Abra o link que enviamos para o seu e-mail.'; };
+  $('#loginMsg').textContent = 'Entrando…';
+  const { error } = await sb.auth.signInWithPassword({ email:$('#email').value.trim(), password:$('#password').value });
+  $('#loginMsg').textContent = !error ? '' : error.message.includes('Invalid login') ? 'E-mail ou senha incorretos.' : 'Não foi possível entrar: '+error.message; };
 $('#logout').onclick = ()=>sb.auth.signOut();
 let started = false;
 if (DEMO){ $('#demoBar').hidden = false; start({ user:{ email:'demonstração' } }); $('#logout').hidden = true; }

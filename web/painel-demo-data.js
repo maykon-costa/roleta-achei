@@ -158,6 +158,6 @@ window.makeMock = function(){
       }
       return { data: null, error: { message: 'Indisponível na demonstração' } };
     },
-    auth: { signOut: async () => {}, signInWithOtp: async () => ({ error: { message: 'demonstração' } }) }
+    auth: { signOut: async () => {}, signInWithPassword: async () => ({ error: { message: 'demonstração' } }) }
   };
 };
