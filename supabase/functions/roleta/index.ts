@@ -4,6 +4,7 @@
 // GET  ?acao=config&b=<padaria>                 → fatias e regras
 // POST { acao:"codigo", phone }                  → envia código por WhatsApp (se OTP ligado)
 // POST { acao:"girar", phone, name, bairro, b, device, consent, otp?, captcha? }
+// POST { acao:"avisar", phone, name, bairro, b, consent, captcha? } → entra na lista de espera
 // POST { acao:"resgatar", code, pin, confirmar } → anunciante valida o prêmio
 //
 // O sorteio acontece no banco (do_spin). O navegador só recebe o resultado e anima.
@@ -84,6 +85,23 @@ Deno.serve(async (req) => {
         p_ua: ua,
         p_otp: body.otp ? String(body.otp).replace(/\D/g, "").slice(0, 6) : null,
         p_neighborhood: bairro,
+      });
+      if (error) throw error;
+      return json(data);
+    }
+
+    // ---- Lista de espera (roleta sem prêmios ou fechada) ----
+    if (body.acao === "avisar") {
+      const phone = normPhone(body.phone);
+      if (!phone) return json({ error: "telefone_invalido" });
+      if (body.consent !== true) return json({ error: "consentimento" });
+      const name = String(body.name ?? "").trim().slice(0, 60);
+      if (!name) return json({ error: "nome" });
+      const bairro = String(body.bairro ?? "").trim().slice(0, 60);
+      if (bairro.length < 2) return json({ error: "bairro" });
+      if (TURNSTILE_SECRET && !(await turnstileOk(body.captcha, ip))) return json({ error: "captcha" });
+      const { data, error } = await sb.rpc("waitlist_join", {
+        p_phone: phone, p_name: name, p_neighborhood: bairro, p_bakery: String(body.b ?? ""), p_ip_hash: ipHash,
       });
       if (error) throw error;
       return json(data);

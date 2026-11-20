@@ -15,7 +15,7 @@ window.makeMock = function(){
       lose_weight: 120, lose_label: 'Não foi dessa vez', lose_slices: 3, prize_valid_days: 7, require_otp: true, trusted_device_days: 30,
       rules_text: 'Válido para clientes das padarias parceiras. 1 giro por dia por WhatsApp. Prêmios sujeitos à disponibilidade. Apresente o código no anunciante dentro da validade.',
       timezone: 'America/Recife', neighborhoods: NB.slice() }],
-    advertisers: [], bakeries: [], prizes: [], players: [], spins: [], claims: []
+    advertisers: [], bakeries: [], prizes: [], players: [], spins: [], claims: [], waitlist: []
   };
 
   [['Açaí da Praça', 'Açaíteria', '#6B2C91', 1], ['Ótica Visão', 'Ótica', '#1F6FB2', 1], ['Studio Bella', 'Salão de beleza', '#D14D8A', 1],
@@ -75,12 +75,20 @@ window.makeMock = function(){
     }
   }
 
+  for (let i = 0; i < 24; i++) {
+    const created = now - Math.floor(rnd() * 6 * DAY);
+    DB.waitlist.push({ id: uid(), name: pick(FN) + ' ' + pick(LN), phone: '55819' + String(Math.floor(rnd() * 1e8)).padStart(8, '0'),
+      neighborhood: wpick(NB, n => nbW[n]), bakery_id: DB.bakeries.length ? pick(DB.bakeries).id : null,
+      created_at: new Date(created).toISOString(), notified_at: i % 5 === 0 ? new Date(created + DAY).toISOString() : null });
+  }
+
   const byId = (t, id) => DB[t].find(x => x.id === id);
   const count = (t, k, v) => DB[t].reduce((a, x) => a + (x[k] === v ? 1 : 0), 0);
   function enrich(t, r) {
     const o = { ...r };
     if (t === 'prizes') { const a = byId('advertisers', r.advertiser_id); o.advertisers = a && { name: a.name, color: a.color, active: a.active }; }
     if (t === 'advertisers') { o.prizes = [{ count: count('prizes', 'advertiser_id', r.id) }]; o.claims = [{ count: count('claims', 'advertiser_id', r.id) }]; }
+    if (t === 'waitlist') { const b = byId('bakeries', r.bakery_id); o.bakeries = b && { name: b.name, slug: b.slug }; }
     if (t === 'bakeries') o.spins = [{ count: count('spins', 'bakery_id', r.id) }];
     if (t === 'players') { o.spins = [{ count: count('spins', 'player_id', r.id) }]; o.claims = [{ count: count('claims', 'player_id', r.id) }]; }
     if (t === 'claims') {

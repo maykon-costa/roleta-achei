@@ -109,6 +109,7 @@ input[type=color]{width:46px;height:36px;padding:0;border:1px solid var(--line);
     <button data-v="padarias" aria-selected="false">Padarias</button>
     <button data-v="ganhadores" aria-selected="false">Ganhadores</button>
     <button data-v="jogadores" aria-selected="false">Jogadores</button>
+    <button data-v="espera" aria-selected="false">Lista de espera</button>
     <button data-v="regras" aria-selected="false">Regras e limites</button>
   </nav>
   <main id="main"></main>
@@ -398,6 +399,35 @@ views.jogadores = async ()=>{
   $('#nbf').onchange = e=>{ playerNb=e.target.value; views.jogadores(); };
   $('#main').onclick = async e=>{ const b=e.target.closest('[data-block]'); if(!b) return;
     await q(sb.from('players').update({blocked:b.dataset.v==='true'}).eq('id',b.dataset.block)); toast(b.dataset.v==='true'?'Jogador bloqueado':'Jogador desbloqueado'); views.jogadores(); };
+};
+
+/* ========== LISTA DE ESPERA ========== */
+let waitFilter = 'all';
+views.espera = async ()=>{
+  const all = await q(sb.from('waitlist').select('id,name,phone,neighborhood,created_at,notified_at,bakeries(name,slug)').order('created_at',{ascending:false}).limit(2000));
+  const rows = all.filter(r => waitFilter==='all' || (waitFilter==='todo' ? !r.notified_at : !!r.notified_at));
+  const pending = all.filter(r=>!r.notified_at).length;
+  const msg = r => `Oi, ${r.name.split(' ')[0]}! A Roleta Achei no Pão abriu 🎉 Gire e ganhe prêmios dos comércios do bairro: ${C.ROLETA_URL}${r.bakeries?.slug ? '?b='+encodeURIComponent(r.bakeries.slug) : ''}`;
+  $('#main').innerHTML = `
+    <div class="bar"><div><h2>Lista de espera</h2><p class="hint">Quem escaneou o QR enquanto a roleta estava sem prêmios ou fechada e pediu para ser avisado.</p></div>
+      <div class="tools"><select id="wf" style="width:auto">${[['all','Todos'],['todo','A avisar'],['done','Já avisados']].map(([v,l])=>`<option value="${v}" ${v===waitFilter?'selected':''}>${l}</option>`).join('')}</select>
+      <button class="btn ghost" id="csv">Exportar CSV</button></div></div>
+    <div class="kpis">${kpi(all.length,'pessoas na lista')}${kpi(pending,'a avisar')}${kpi(all.length-pending,'já avisadas')}</div>
+    <div class="tbl-wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Bairro</th><th>Padaria</th><th>Entrou</th><th>Status</th><th></th></tr>
+    ${rows.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${phoneFmt(r.phone)}</td><td>${esc(r.neighborhood)}</td><td>${esc(r.bakeries?.name)||'<span class="hint">—</span>'}</td><td>${dt(r.created_at)}</td>
+      <td>${r.notified_at?`<span class="tag ok">Avisado</span><div class="hint">${dt(r.notified_at)}</div>`:'<span class="tag warn">A avisar</span>'}</td>
+      <td><div class="row-actions"><a class="btn sm${r.notified_at?' ghost':''}" style="text-decoration:none" target="_blank" rel="noopener" data-notify="${r.id}" href="https://wa.me/${esc(r.phone)}?text=${encodeURIComponent(msg(r))}">Chamar no WhatsApp</a></div></td></tr>`).join('')
+      || `<tr><td colspan="7" class="empty">${all.length?'Nenhum nesta visão.':'Ninguém na lista ainda. Quando a roleta estiver sem prêmios, quem escanear o QR pode deixar o WhatsApp aqui.'}</td></tr>`}
+    </table></div>`;
+  $('#wf').onchange = e=>{ waitFilter=e.target.value; views.espera(); };
+  $('#csv').onclick = ()=>{
+    const head=['nome','whatsapp','bairro','padaria','entrou_em','avisado_em'];
+    const lines=[head.join(';')].concat(rows.map(r=>[r.name,r.phone,r.neighborhood,r.bakeries?.name,dt(r.created_at),r.notified_at?dt(r.notified_at):''].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')));
+    saveFile(new Blob(['﻿'+lines.join('\n')],{type:'text/csv'}), 'lista-de-espera-roleta.csv');
+  };
+  $('#main').onclick = async e=>{ const a=e.target.closest('[data-notify]'); if(!a) return;
+    const r = all.find(x=>x.id===a.dataset.notify); if (r.notified_at) return;
+    await q(sb.from('waitlist').update({notified_at:new Date().toISOString()}).eq('id',r.id)); toast('Marcado como avisado'); views.espera(); };
 };
 
 /* ========== REGRAS ========== */

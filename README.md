@@ -23,6 +23,7 @@ painel.html ──► você controla prêmios, anunciantes, padarias, limites e 
 | `web/roleta.html` | Página do cliente (sem `?b=`, usa a origem `saco`; abre em modo demonstração enquanto não estiver configurada) |
 | `web/resgate.html` | Página do anunciante para validar códigos |
 | `web/painel.html` | Seu painel administrativo |
+| `supabase/migrations/…_lista_espera.sql` | Lista de espera: quem escaneia o QR quando a roleta está sem prêmios ou fechada deixa o WhatsApp |
 | `web/painel-demo-data.js` | Dados fictícios do modo demonstração do painel (pode apagar em produção) |
 
 ## Como o anti-fraude funciona
