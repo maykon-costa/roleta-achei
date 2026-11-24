@@ -146,7 +146,8 @@ $('#logout').onclick = ()=>sb.auth.signOut();
 let started = false;
 if (DEMO){ $('#demoBar').hidden = false; start({ user:{ email:'demonstração' } }); $('#logout').hidden = true; }
 else {
-  sb.auth.onAuthStateChange((_e,s)=> s ? start(s) : stop());
+  // setTimeout: chamar o Supabase direto dentro deste aviso trava o login (o supabase-js espera o aviso terminar)
+  sb.auth.onAuthStateChange((_e,s)=> setTimeout(()=> s ? start(s) : stop(), 0));
   const { data:{ session } } = await sb.auth.getSession(); session ? start(session) : stop();
 }
 function stop(){ started=false; $('#app').style.display='none'; $('#login').style.display='grid'; }
